@@ -32,21 +32,63 @@ namespace Voice
             var menuItems = _notifyIcon.ContextMenuStrip.Items;
 
             var voicesMenuItem = new ToolStripMenuItem("Voices");
-            
-            foreach (var installedVoice in _speechSynthesizer.GetInstalledVoices())
-            {
-                voicesMenuItem.DropDownItems.Add(new ToolStripMenuItem(installedVoice.VoiceInfo.Name, null, OnVoiceItemClick)
-                {
-                    Checked = _speechSynthesizer.Voice.Equals(installedVoice.VoiceInfo)
-                });
-            }
+            voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
+            var rateMenuItem = new ToolStripMenuItem("Rate");
+            rateMenuItem.DropDownItems.AddRange(GetRateItems());
+            
             menuItems.Add(voicesMenuItem);
+            menuItems.Add(rateMenuItem);
             menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) {Checked = _listening});
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
 
             ClipboardNotification.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+        }
+
+        private ToolStripItem[] GetRateItems()
+        {
+            var availableRates = new[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10};
+            var rates = new ToolStripItem[availableRates.Length];
+
+            for (var index = 0; index < availableRates.Length; index++)
+            {
+                var rate = availableRates[index];
+                rates[index] = new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
+                {
+                    Checked = _speechSynthesizer.Rate == rate
+                };
+            }
+
+            return rates;
+        }
+
+        private void OnRateItemClick(object sender, EventArgs eventArgs)
+        {
+            var toolStripMenuItem = (ToolStripMenuItem)sender;
+            _speechSynthesizer.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+
+            foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
+            {
+                item.Checked = _speechSynthesizer.Rate == Convert.ToInt32(item.Text);
+            }
+        }
+
+        private ToolStripItem[] GetVoiceItems()
+        {
+            var installedVoices = _speechSynthesizer.GetInstalledVoices();
+            var voices = new ToolStripItem[installedVoices.Count];
+
+            for (var index = 0; index < installedVoices.Count; index++)
+            {
+                var installedVoice = installedVoices[index];
+                voices[index] = new ToolStripMenuItem(installedVoice.VoiceInfo.Name, null, OnVoiceItemClick)
+                {
+                    Checked = _speechSynthesizer.Voice.Equals(installedVoice.VoiceInfo)
+                };
+            }
+
+            return voices;
         }
 
         private void OnVoiceItemClick(object sender, EventArgs eventArgs)
