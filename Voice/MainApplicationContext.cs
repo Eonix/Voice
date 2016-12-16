@@ -17,9 +17,6 @@ namespace Voice
         public MainApplicationContext()
         {
             _speechSynthesizer = new SpeechSynthesizer();
-            _speechSynthesizer.SelectVoice("IVONA 2 Amy");
-            _speechSynthesizer.Rate = 5;
-
             _components = new Container();
             _notifyIcon = new NotifyIcon(_components)
             {
@@ -40,10 +37,16 @@ namespace Voice
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) {Checked = _listening});
+            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, OnStopTalkingClick));
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
 
             ClipboardNotification.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+        }
+
+        private void OnStopTalkingClick(object sender, EventArgs eventArgs)
+        {
+            _speechSynthesizer.SpeakAsyncCancelAll();
         }
 
         private ToolStripItem[] GetRateItems()
