@@ -3,22 +3,23 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Speech.Synthesis;
 using System.Windows.Forms;
+using Voice.Properties;
 
 namespace Voice
 {
     public class MainApplicationContext : ApplicationContext
     {
-        private readonly Container _components;
-        private readonly NotifyIcon _notifyIcon;
-        private readonly SpeechSynthesizer _speechSynthesizer;
+        private readonly Container components;
+        private readonly NotifyIcon notifyIcon;
+        private readonly SpeechSynthesizer speechSynthesizer;
 
-        private bool _listening = true;
+        private bool listening;
 
         public MainApplicationContext()
         {
-            _speechSynthesizer = new SpeechSynthesizer();
-            _components = new Container();
-            _notifyIcon = new NotifyIcon(_components)
+            speechSynthesizer = new SpeechSynthesizer();
+            components = new Container();
+            notifyIcon = new NotifyIcon(components)
             {
                 ContextMenuStrip = new ContextMenuStrip(),
                 Icon = SystemIcons.WinLogo,
@@ -26,27 +27,37 @@ namespace Voice
                 Visible = true
             };
 
-            var menuItems = _notifyIcon.ContextMenuStrip.Items;
+            speechSynthesizer.Rate = Settings.Default.Rate;
+            if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
+                speechSynthesizer.SelectVoice(Settings.Default.Voice);
+
+            listening = Settings.Default.Listening;
+            PopulateMenu();
+
+            ClipboardNotification.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+        }
+
+        private void PopulateMenu()
+        {
+            var menuItems = notifyIcon.ContextMenuStrip.Items;
 
             var voicesMenuItem = new ToolStripMenuItem("Voices");
             voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
             var rateMenuItem = new ToolStripMenuItem("Rate");
             rateMenuItem.DropDownItems.AddRange(GetRateItems());
-            
+
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
-            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) {Checked = _listening});
+            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = listening });
             menuItems.Add(new ToolStripMenuItem("Stop Talking", null, OnStopTalkingClick));
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
-
-            ClipboardNotification.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
         }
 
         private void OnStopTalkingClick(object sender, EventArgs eventArgs)
         {
-            _speechSynthesizer.SpeakAsyncCancelAll();
+            speechSynthesizer.SpeakAsyncCancelAll();
         }
 
         private ToolStripItem[] GetRateItems()
@@ -59,7 +70,7 @@ namespace Voice
                 var rate = availableRates[index];
                 rates[index] = new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
                 {
-                    Checked = _speechSynthesizer.Rate == rate
+                    Checked = speechSynthesizer.Rate == rate
                 };
             }
 
@@ -69,17 +80,20 @@ namespace Voice
         private void OnRateItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
-            _speechSynthesizer.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+            speechSynthesizer.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+
+            Settings.Default.Rate = speechSynthesizer.Rate;
+            Settings.Default.Save();
 
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
-                item.Checked = _speechSynthesizer.Rate == Convert.ToInt32(item.Text);
+                item.Checked = speechSynthesizer.Rate == Convert.ToInt32(item.Text);
             }
         }
 
         private ToolStripItem[] GetVoiceItems()
         {
-            var installedVoices = _speechSynthesizer.GetInstalledVoices();
+            var installedVoices = speechSynthesizer.GetInstalledVoices();
             var voices = new ToolStripItem[installedVoices.Count];
 
             for (var index = 0; index < installedVoices.Count; index++)
@@ -87,7 +101,7 @@ namespace Voice
                 var installedVoice = installedVoices[index];
                 voices[index] = new ToolStripMenuItem(installedVoice.VoiceInfo.Name, null, OnVoiceItemClick)
                 {
-                    Checked = _speechSynthesizer.Voice.Equals(installedVoice.VoiceInfo)
+                    Checked = speechSynthesizer.Voice.Equals(installedVoice.VoiceInfo)
                 };
             }
 
@@ -97,32 +111,38 @@ namespace Voice
         private void OnVoiceItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
-            _speechSynthesizer.SelectVoice(toolStripMenuItem.Text);
+            speechSynthesizer.SelectVoice(toolStripMenuItem.Text);
+
+            Settings.Default.Voice = toolStripMenuItem.Text;
+            Settings.Default.Save();
 
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
-                item.Checked = _speechSynthesizer.Voice.Name == item.Text;
+                item.Checked = speechSynthesizer.Voice.Name == item.Text;
             }
         }
 
         private void OnListeningClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem) sender;
-            _listening = !_listening;
-            toolStripMenuItem.Checked = _listening;
+            listening = !listening;
+            toolStripMenuItem.Checked = listening;
+
+            Settings.Default.Listening = listening;
+            Settings.Default.Save();
         }
 
         private void ClipboardNotificationOnClipboardUpdate(object sender, EventArgs eventArgs)
         {
-            if (!_listening)
+            if (!listening)
                 return;
 
             var text = Clipboard.GetText();
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            _speechSynthesizer.SpeakAsyncCancelAll();
-            _speechSynthesizer.SpeakAsync(text);
+            speechSynthesizer.SpeakAsyncCancelAll();
+            speechSynthesizer.SpeakAsync(text);
         }
 
         private void OnExitClick(object sender, EventArgs eventArgs)
@@ -134,8 +154,8 @@ namespace Voice
         {
             if (disposing)
             {
-                _components?.Dispose();
-                _speechSynthesizer?.Dispose();
+                components?.Dispose();
+                speechSynthesizer?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -143,7 +163,7 @@ namespace Voice
 
         protected override void ExitThreadCore()
         {
-            _notifyIcon.Visible = false;
+            notifyIcon.Visible = false;
 
             base.ExitThreadCore();
         }
