@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Drawing;
 using System.Speech.Synthesis;
 using System.Windows.Forms;
 using Voice.Properties;
