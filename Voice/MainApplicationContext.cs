@@ -33,7 +33,9 @@ namespace Voice
             listening = Settings.Default.Listening;
             PopulateMenu();
 
-            ClipboardNotification.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+            var notificationForm = new NotificationForm();
+            components.Add(notificationForm);
+            notificationForm.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
         }
 
         private void PopulateMenu()

@@ -1,51 +1,29 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Voice
 {
-    /// <summary>
-    /// Provides notifications when the contents of the clipboard is updated.
-    /// </summary>
-    public sealed class ClipboardNotification
+    public class NotificationForm : Form
     {
-        /// <summary>
-        /// Occurs when the contents of the clipboard is updated.
-        /// </summary>
-        public static event EventHandler ClipboardUpdate;
+        public event EventHandler ClipboardUpdate;
 
-        private static NotificationForm _form = new NotificationForm();
-
-        /// <summary>
-        /// Raises the <see cref="ClipboardUpdate"/> event.
-        /// </summary>
-        /// <param name="e">Event arguments for the event.</param>
-        private static void OnClipboardUpdate(EventArgs e)
+        public NotificationForm()
         {
-            ClipboardUpdate?.Invoke(null, e);
+            NativeMethods.SetParent(Handle, NativeMethods.HWND_MESSAGE);
+            NativeMethods.AddClipboardFormatListener(Handle);
         }
 
-        /// <summary>
-        /// Hidden form to recieve the WM_CLIPBOARDUPDATE message.
-        /// </summary>
-        private class NotificationForm : Form
+        protected override void WndProc(ref Message m)
         {
-            public NotificationForm()
-            {
-                NativeMethods.SetParent(Handle, NativeMethods.HWND_MESSAGE);
-                NativeMethods.AddClipboardFormatListener(Handle);
-            }
+            if (m.Msg == NativeMethods.WM_CLIPBOARDUPDATE)
+                ClipboardUpdate?.Invoke(null, new EventArgs());
 
-            protected override void WndProc(ref Message m)
-            {
-                if (m.Msg == NativeMethods.WM_CLIPBOARDUPDATE)
-                    OnClipboardUpdate(new EventArgs());
-
-                base.WndProc(ref m);
-            }
+            base.WndProc(ref m);
         }
     }
-
+    
     internal static class NativeMethods
     {
         // See http://msdn.microsoft.com/en-us/library/ms649021%28v=vs.85%29.aspx
