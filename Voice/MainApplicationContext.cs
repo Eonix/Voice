@@ -22,7 +22,7 @@ namespace Voice
             notifyIcon = new NotifyIcon(components)
             {
                 ContextMenuStrip = new ContextMenuStrip(),
-                Icon = SystemIcons.WinLogo,
+                Icon = Resources.icon,
                 Text = @"Voice",
                 Visible = true
             };
