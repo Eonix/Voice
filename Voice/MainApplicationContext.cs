@@ -133,17 +133,13 @@ namespace Voice
             Settings.Default.Save();
         }
 
-        private void ClipboardNotificationOnClipboardUpdate(object sender, EventArgs eventArgs)
+        private void ClipboardNotificationOnClipboardUpdate(object sender, IDataObject dataObject)
         {
             if (!listening)
                 return;
 
-            var text = Clipboard.GetText();
-            if (string.IsNullOrWhiteSpace(text))
-                return;
-
             speechSynthesizer.SpeakAsyncCancelAll();
-            speechSynthesizer.SpeakAsync(text);
+            speechSynthesizer.SpeakAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)));
         }
 
         private void OnExitClick(object sender, EventArgs eventArgs)
