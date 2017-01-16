@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Linq;
 using System.Speech.Synthesis;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Voice.Properties;
 
@@ -10,13 +14,13 @@ namespace Voice
     {
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
-        private readonly SpeechSynthesizer speechSynthesizer;
 
+        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private Task executingVoice = Task.CompletedTask;
         private bool listening;
 
         public MainApplicationContext()
         {
-            speechSynthesizer = new SpeechSynthesizer();
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
@@ -25,12 +29,9 @@ namespace Voice
                 Text = @"Voice",
                 Visible = true
             };
-
-            speechSynthesizer.Rate = Settings.Default.Rate;
-            if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
-                speechSynthesizer.SelectVoice(Settings.Default.Voice);
-
+            
             listening = Settings.Default.Listening;
+            
             PopulateMenu();
 
             var notificationForm = new NotificationForm();
@@ -58,7 +59,9 @@ namespace Voice
 
         private void OnStopTalkingClick(object sender, EventArgs eventArgs)
         {
-            speechSynthesizer.SpeakAsyncCancelAll();
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = new CancellationTokenSource();
         }
 
         private ToolStripItem[] GetRateItems()
@@ -71,7 +74,7 @@ namespace Voice
                 var rate = availableRates[index];
                 rates[index] = new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
                 {
-                    Checked = speechSynthesizer.Rate == rate
+                    Checked = Settings.Default.Rate == rate
                 };
             }
 
@@ -81,45 +84,39 @@ namespace Voice
         private void OnRateItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
-            speechSynthesizer.Rate = Convert.ToInt32(toolStripMenuItem.Text);
 
-            Settings.Default.Rate = speechSynthesizer.Rate;
+            Settings.Default.Rate = Convert.ToInt32(toolStripMenuItem.Text);
             Settings.Default.Save();
 
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
-                item.Checked = speechSynthesizer.Rate == Convert.ToInt32(item.Text);
+                item.Checked = Settings.Default.Rate == Convert.ToInt32(item.Text);
             }
         }
 
-        private ToolStripItem[] GetVoiceItems()
+        private static ToolStripItem[] GetVoiceItems()
         {
-            var installedVoices = speechSynthesizer.GetInstalledVoices();
-            var voices = new ToolStripItem[installedVoices.Count];
-
-            for (var index = 0; index < installedVoices.Count; index++)
+            using (var speechSynthesizer = new SpeechSynthesizer())
             {
-                var installedVoice = installedVoices[index];
-                voices[index] = new ToolStripMenuItem(installedVoice.VoiceInfo.Name, null, OnVoiceItemClick)
+                var installedVoices = speechSynthesizer.GetInstalledVoices().Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
                 {
-                    Checked = speechSynthesizer.Voice.Equals(installedVoice.VoiceInfo)
-                };
+                    Checked = Settings.Default.Voice == voice.VoiceInfo.Name
+                });
+                
+                return installedVoices.Cast<ToolStripItem>().ToArray();
             }
-
-            return voices;
         }
 
-        private void OnVoiceItemClick(object sender, EventArgs eventArgs)
+        private static void OnVoiceItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
-            speechSynthesizer.SelectVoice(toolStripMenuItem.Text);
 
             Settings.Default.Voice = toolStripMenuItem.Text;
             Settings.Default.Save();
 
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
-                item.Checked = speechSynthesizer.Voice.Name == item.Text;
+                item.Checked = Settings.Default.Voice == item.Text;
             }
         }
 
@@ -138,8 +135,22 @@ namespace Voice
             if (!listening)
                 return;
 
-            speechSynthesizer.SpeakAsyncCancelAll();
-            speechSynthesizer.SpeakAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)));
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = new CancellationTokenSource();
+
+            executingVoice = executingVoice.ContinueWith(async (_, __) =>
+            {
+                using (var synthesizer = new SpeechSynthesizer())
+                {
+                    synthesizer.Rate = Settings.Default.Rate;
+
+                    if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
+                        synthesizer.SelectVoice(Settings.Default.Voice);
+
+                    await synthesizer.SpeakTextAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)), cancellationTokenSource.Token);
+                }
+            }, null, cancellationTokenSource.Token);
         }
 
         private void OnExitClick(object sender, EventArgs eventArgs)
@@ -152,7 +163,8 @@ namespace Voice
             if (disposing)
             {
                 components?.Dispose();
-                speechSynthesizer?.Dispose();
+                executingVoice?.Dispose();
+                cancellationTokenSource.Dispose();
             }
 
             base.Dispose(disposing);
