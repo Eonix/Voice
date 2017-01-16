@@ -16,7 +16,6 @@ namespace Voice
         private readonly NotifyIcon notifyIcon;
 
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private Task executingVoice = Task.CompletedTask;
         private bool listening;
 
         public MainApplicationContext()
@@ -98,10 +97,16 @@ namespace Voice
         {
             using (var speechSynthesizer = new SpeechSynthesizer())
             {
-                var installedVoices = speechSynthesizer.GetInstalledVoices().Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
-                {
-                    Checked = Settings.Default.Voice == voice.VoiceInfo.Name
-                });
+                var currentVoice = string.IsNullOrWhiteSpace(Settings.Default.Voice)
+                    ? speechSynthesizer.Voice.Name // If no voice is set, use default from engine.
+                    : Settings.Default.Voice;
+
+                var installedVoices =
+                    speechSynthesizer.GetInstalledVoices()
+                        .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
+                        {
+                            Checked = currentVoice == voice.VoiceInfo.Name
+                        });
                 
                 return installedVoices.Cast<ToolStripItem>().ToArray();
             }
@@ -139,7 +144,7 @@ namespace Voice
             cancellationTokenSource.Dispose();
             cancellationTokenSource = new CancellationTokenSource();
 
-            executingVoice = executingVoice.ContinueWith(async (_, __) =>
+            Task.Run(async () =>
             {
                 using (var synthesizer = new SpeechSynthesizer())
                 {
@@ -148,9 +153,10 @@ namespace Voice
                     if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
                         synthesizer.SelectVoice(Settings.Default.Voice);
 
-                    await synthesizer.SpeakTextAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)), cancellationTokenSource.Token);
+                    await synthesizer.SpeakTextAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)),
+                        cancellationTokenSource.Token);
                 }
-            }, null, cancellationTokenSource.Token);
+            });
         }
 
         private void OnExitClick(object sender, EventArgs eventArgs)
@@ -163,7 +169,6 @@ namespace Voice
             if (disposing)
             {
                 components?.Dispose();
-                executingVoice?.Dispose();
                 cancellationTokenSource.Dispose();
             }
 

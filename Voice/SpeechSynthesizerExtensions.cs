@@ -9,15 +9,7 @@ namespace System.Speech.Synthesis
         public static Task<Prompt> SpeakTextAsync(this SpeechSynthesizer synthesizer, string textToSpeak, CancellationToken token)
         {
             var source = new TaskCompletionSource<Prompt>();
-            synthesizer.SpeakCompleted += (_, eventArgs) =>
-            {
-                if (eventArgs.Error != null)
-                    source.SetException(eventArgs.Error);
-                else if (eventArgs.Cancelled)
-                    source.SetCanceled();
-                else if (eventArgs.Prompt != null)
-                    source.SetResult(eventArgs.Prompt);
-            };
+            synthesizer.SpeakCompleted += OnSpeakCompleted(source);
 
             var prompt = synthesizer.SpeakAsync(textToSpeak);
             token.Register(() =>
@@ -27,6 +19,19 @@ namespace System.Speech.Synthesis
             });
 
             return source.Task;
+        }
+
+        private static EventHandler<SpeakCompletedEventArgs> OnSpeakCompleted(TaskCompletionSource<Prompt> source)
+        {
+            return (_, eventArgs) =>
+            {
+                if (eventArgs.Cancelled)
+                    source.SetCanceled();
+                else if (eventArgs.Error != null)
+                    source.SetException(eventArgs.Error);
+                else
+                    source.SetResult(eventArgs.Prompt);
+            };
         }
     }
 }
