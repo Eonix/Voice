@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Linq;
 using System.Speech.Synthesis;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Voice.Properties;
 
@@ -14,12 +11,13 @@ namespace Voice
     {
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
+        private readonly SpeechSynthesizer speechSynthesizer;
 
-        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private bool listening;
 
         public MainApplicationContext()
         {
+            speechSynthesizer = new SpeechSynthesizer();
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
@@ -51,16 +49,9 @@ namespace Voice
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = listening });
-            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, OnStopTalkingClick));
+            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, (_, __) => speechSynthesizer.SpeakAsyncCancelAll()));
             menuItems.Add(new ToolStripSeparator());
-            menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
-        }
-
-        private void OnStopTalkingClick(object sender, EventArgs eventArgs)
-        {
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
-            cancellationTokenSource = new CancellationTokenSource();
+            menuItems.Add(new ToolStripMenuItem("Exit", null, (_, __) => ExitThread()));
         }
 
         private ToolStripItem[] GetRateItems()
@@ -87,37 +78,38 @@ namespace Voice
             Settings.Default.Rate = Convert.ToInt32(toolStripMenuItem.Text);
             Settings.Default.Save();
 
+            speechSynthesizer.Rate = Settings.Default.Rate;
+
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
                 item.Checked = Settings.Default.Rate == Convert.ToInt32(item.Text);
             }
         }
 
-        private static ToolStripItem[] GetVoiceItems()
+        private ToolStripItem[] GetVoiceItems()
         {
-            using (var speechSynthesizer = new SpeechSynthesizer())
-            {
-                var currentVoice = string.IsNullOrWhiteSpace(Settings.Default.Voice)
-                    ? speechSynthesizer.Voice.Name // If no voice is set, use default from engine.
-                    : Settings.Default.Voice;
+            var currentVoice = string.IsNullOrWhiteSpace(Settings.Default.Voice)
+                ? speechSynthesizer.Voice.Name // If no voice is set, use default from engine.
+                : Settings.Default.Voice;
 
-                var installedVoices =
-                    speechSynthesizer.GetInstalledVoices()
-                        .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
-                        {
-                            Checked = currentVoice == voice.VoiceInfo.Name
-                        });
-                
-                return installedVoices.Cast<ToolStripItem>().ToArray();
-            }
+            var installedVoices =
+                speechSynthesizer.GetInstalledVoices()
+                    .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
+                    {
+                        Checked = currentVoice == voice.VoiceInfo.Name
+                    });
+
+            return installedVoices.Cast<ToolStripItem>().ToArray();
         }
 
-        private static void OnVoiceItemClick(object sender, EventArgs eventArgs)
+        private void OnVoiceItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
             Settings.Default.Voice = toolStripMenuItem.Text;
             Settings.Default.Save();
+
+            speechSynthesizer.SelectVoice(Settings.Default.Voice);
 
             foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
             {
@@ -140,36 +132,16 @@ namespace Voice
             if (!listening)
                 return;
 
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
-            cancellationTokenSource = new CancellationTokenSource();
-
-            Task.Run(async () =>
-            {
-                using (var synthesizer = new SpeechSynthesizer())
-                {
-                    synthesizer.Rate = Settings.Default.Rate;
-
-                    if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
-                        synthesizer.SelectVoice(Settings.Default.Voice);
-
-                    await synthesizer.SpeakTextAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)),
-                        cancellationTokenSource.Token);
-                }
-            });
-        }
-
-        private void OnExitClick(object sender, EventArgs eventArgs)
-        {
-            ExitThread();
+            speechSynthesizer.SpeakAsyncCancelAll();
+            speechSynthesizer.SpeakAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)));
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                components?.Dispose();
-                cancellationTokenSource.Dispose();
+                components.Dispose();
+                speechSynthesizer.Dispose();
             }
 
             base.Dispose(disposing);
