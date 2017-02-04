@@ -28,7 +28,11 @@ namespace Voice
             };
             
             listening = Settings.Default.Listening;
-            
+            speechSynthesizer.Rate = Settings.Default.Rate;
+
+            if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
+                speechSynthesizer.SelectVoice(Settings.Default.Voice);
+
             PopulateMenu();
 
             var notificationForm = new NotificationForm();
