@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Speech.Synthesis;
 using System.Windows.Forms;
@@ -9,6 +10,8 @@ namespace Voice
 {
     public class MainApplicationContext : ApplicationContext
     {
+        private readonly Stopwatch lastSpeechStopwatch = new Stopwatch();
+        private readonly Timer restartTimer;
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
         private readonly SpeechSynthesizer speechSynthesizer;
@@ -38,6 +41,26 @@ namespace Voice
             var notificationForm = new NotificationForm();
             components.Add(notificationForm);
             notificationForm.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+
+            // Timer for restarting the application if the speech engine was last used 5 mins. ago.
+            // This is sadly a necessary fix to prevent the memory leak by the SAPI engine.
+            restartTimer = new Timer(components);
+            restartTimer.Tick += RestartTimerOnTick;
+            restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
+            restartTimer.Start();
+        }
+
+        private void RestartTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            if (speechSynthesizer.State != SynthesizerState.Ready)
+                return;
+
+            if (lastSpeechStopwatch.Elapsed < TimeSpan.FromMinutes(5))
+                return;
+
+            // Restart the application.
+            Process.Start(Application.ExecutablePath);
+            ExitThread();
         }
 
         private void PopulateMenu()
@@ -135,6 +158,8 @@ namespace Voice
         {
             if (!listening)
                 return;
+
+            lastSpeechStopwatch.Restart();
 
             speechSynthesizer.SpeakAsyncCancelAll();
             speechSynthesizer.SpeakAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)));
