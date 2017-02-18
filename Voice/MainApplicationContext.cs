@@ -73,29 +73,53 @@ namespace Voice
             var rateMenuItem = new ToolStripMenuItem("Rate");
             rateMenuItem.DropDownItems.AddRange(GetRateItems());
 
+            var volumeMenuItem = new ToolStripMenuItem("Volume");
+            volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
+
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
+            menuItems.Add(volumeMenuItem);
             menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = listening });
             menuItems.Add(new ToolStripMenuItem("Stop Talking", null, (_, __) => speechSynthesizer.SpeakAsyncCancelAll()));
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, (_, __) => ExitThread()));
         }
 
+        private ToolStripItem[] GetVolumeItems()
+        {
+            var availableVolumes = new[] { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0 };
+
+            speechSynthesizer.Volume = Settings.Default.Volume;
+
+            return
+                availableVolumes.Select(volume => new ToolStripMenuItem(Convert.ToString(volume), null, OnVolumeItemClick)
+                {
+                    Checked = Settings.Default.Volume == volume
+                }).Cast<ToolStripItem>().ToArray();
+        }
+
+        private void OnVolumeItemClick(object sender, EventArgs e)
+        {
+            var toolStripMenuItem = (ToolStripMenuItem)sender;
+
+            Settings.Default.Volume = Convert.ToInt32(toolStripMenuItem.Text);
+            Settings.Default.Save();
+
+            speechSynthesizer.Volume = Settings.Default.Volume;
+
+            foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
+            {
+                item.Checked = Settings.Default.Volume == Convert.ToInt32(item.Text);
+            }
+        }
+
         private ToolStripItem[] GetRateItems()
         {
             var availableRates = new[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10};
-            var rates = new ToolStripItem[availableRates.Length];
-
-            for (var index = 0; index < availableRates.Length; index++)
+            return availableRates.Select(rate => new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
             {
-                var rate = availableRates[index];
-                rates[index] = new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
-                {
-                    Checked = Settings.Default.Rate == rate
-                };
-            }
-
-            return rates;
+                Checked = Settings.Default.Rate == rate
+            }).Cast<ToolStripItem>().ToArray();
         }
 
         private void OnRateItemClick(object sender, EventArgs eventArgs)
@@ -119,14 +143,11 @@ namespace Voice
                 ? speechSynthesizer.Voice.Name // If no voice is set, use default from engine.
                 : Settings.Default.Voice;
 
-            var installedVoices =
-                speechSynthesizer.GetInstalledVoices()
-                    .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
-                    {
-                        Checked = currentVoice == voice.VoiceInfo.Name
-                    });
-
-            return installedVoices.Cast<ToolStripItem>().ToArray();
+            return speechSynthesizer.GetInstalledVoices()
+                .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, this.OnVoiceItemClick)
+                {
+                    Checked = currentVoice == voice.VoiceInfo.Name
+                }).Cast<ToolStripItem>().ToArray();
         }
 
         private void OnVoiceItemClick(object sender, EventArgs eventArgs)
