@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Speech.Synthesis;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Voice.Properties;
 
@@ -32,6 +34,7 @@ namespace Voice
             
             listening = Settings.Default.Listening;
             speechSynthesizer.Rate = Settings.Default.Rate;
+            speechSynthesizer.Volume = Settings.Default.Volume;
 
             if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
                 speechSynthesizer.SelectVoice(Settings.Default.Voice);
@@ -89,8 +92,6 @@ namespace Voice
         {
             var availableVolumes = new[] { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0 };
 
-            speechSynthesizer.Volume = Settings.Default.Volume;
-
             return
                 availableVolumes.Select(volume => new ToolStripMenuItem(Convert.ToString(volume), null, OnVolumeItemClick)
                 {
@@ -144,7 +145,7 @@ namespace Voice
                 : Settings.Default.Voice;
 
             return speechSynthesizer.GetInstalledVoices()
-                .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, this.OnVoiceItemClick)
+                .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
                 {
                     Checked = currentVoice == voice.VoiceInfo.Name
                 }).Cast<ToolStripItem>().ToArray();
@@ -183,7 +184,24 @@ namespace Voice
             lastSpeechStopwatch.Restart();
 
             speechSynthesizer.SpeakAsyncCancelAll();
-            speechSynthesizer.SpeakAsync(Convert.ToString(dataObject.GetData(DataFormats.Text)));
+            speechSynthesizer.SpeakAsync(ShortenUrls(Convert.ToString(dataObject.GetData(DataFormats.Text))));
+        }
+
+        private static string ShortenUrls(string content)
+        {
+            var builder = new StringBuilder(content);
+
+            foreach (Match match in Regex.Matches(content,
+                @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)"))
+            {
+                var matchValue = match.Value;
+                if (Uri.TryCreate(matchValue, UriKind.RelativeOrAbsolute, out var result))
+                {
+                    builder.Replace(matchValue, $"{result.Host} URL", match.Index, match.Length);
+                }
+            }
+
+            return builder.ToString();
         }
 
         protected override void Dispose(bool disposing)
