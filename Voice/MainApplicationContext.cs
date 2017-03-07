@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Speech.Synthesis;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Voice.Properties;
@@ -13,7 +12,6 @@ namespace Voice
     public class MainApplicationContext : ApplicationContext
     {
         private readonly Stopwatch lastSpeechStopwatch = new Stopwatch();
-        private readonly Timer restartTimer;
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
         private readonly SpeechSynthesizer speechSynthesizer;
@@ -47,7 +45,7 @@ namespace Voice
 
             // Timer for restarting the application if the speech engine was last used 5 mins. ago.
             // This is sadly a necessary fix to prevent the memory leak by the SAPI engine.
-            restartTimer = new Timer(components);
+            var restartTimer = new Timer(components);
             restartTimer.Tick += RestartTimerOnTick;
             restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
             restartTimer.Start();
@@ -189,19 +187,15 @@ namespace Voice
 
         private static string ShortenUrls(string content)
         {
-            var builder = new StringBuilder(content);
+            return Regex.Replace(content,
+                @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)",
+                ReplaceUrl);
+        }
 
-            foreach (Match match in Regex.Matches(content,
-                @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)"))
-            {
-                var matchValue = match.Value;
-                if (Uri.TryCreate(matchValue, UriKind.RelativeOrAbsolute, out var result))
-                {
-                    builder.Replace(matchValue, $"{result.Host} URL", match.Index, match.Length);
-                }
-            }
-
-            return builder.ToString();
+        private static string ReplaceUrl(Match match)
+        {
+            var matchValue = match.ToString();
+            return Uri.TryCreate(matchValue, UriKind.RelativeOrAbsolute, out var result) ? result.Host : matchValue;
         }
 
         protected override void Dispose(bool disposing)
