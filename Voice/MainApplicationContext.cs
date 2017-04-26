@@ -29,6 +29,8 @@ namespace Voice
                 Text = @"Voice",
                 Visible = true
             };
+
+            Settings.Default.Reload();
             
             listening = Settings.Default.Listening;
             speechSynthesizer.Rate = Settings.Default.Rate;
