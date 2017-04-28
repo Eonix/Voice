@@ -30,8 +30,6 @@ namespace Voice
                 Visible = true
             };
 
-            Settings.Default.Reload();
-            
             listening = Settings.Default.Listening;
             speechSynthesizer.Rate = Settings.Default.Rate;
             speechSynthesizer.Volume = Settings.Default.Volume;
@@ -60,10 +58,8 @@ namespace Voice
 
             if (lastSpeechStopwatch.Elapsed < TimeSpan.FromMinutes(5))
                 return;
-
-            // Restart the application.
-            Process.Start(Application.ExecutablePath);
-            ExitThread();
+            
+            Application.Restart();
         }
 
         private void PopulateMenu()
