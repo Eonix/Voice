@@ -187,13 +187,9 @@ namespace Voice
         {
             return Regex.Replace(content,
                 @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)",
-                ReplaceUrl);
-        }
-
-        private static string ReplaceUrl(Match match)
-        {
-            var matchValue = match.ToString();
-            return Uri.TryCreate(matchValue, UriKind.RelativeOrAbsolute, out var result) ? result.Host : matchValue;
+                match => Uri.TryCreate(match.ToString(), UriKind.RelativeOrAbsolute, out var result)
+                    ? result.Host
+                    : match.ToString());
         }
 
         protected override void Dispose(bool disposing)
