@@ -31,13 +31,15 @@ namespace Voice
             };
 
             listening = Settings.Default.Listening;
-            speechSynthesizer.Rate = Settings.Default.Rate;
-            speechSynthesizer.Volume = Settings.Default.Volume;
 
-            if (!string.IsNullOrWhiteSpace(Settings.Default.Voice))
-                speechSynthesizer.SelectVoice(Settings.Default.Voice);
+            var currentVoice = Settings.Default.CurrentVoice;
+            if (!string.IsNullOrWhiteSpace(currentVoice))
+                speechSynthesizer.SelectVoice(currentVoice);
 
-            PopulateMenu();
+            if (Settings.Default.ProfileCollection == null)
+                Settings.Default.ProfileCollection = new VoiceProfileCollection();
+
+            PopulateMenu(GetOrAddProfile(speechSynthesizer, Settings.Default));
 
             var notificationForm = new NotificationForm();
             components.Add(notificationForm);
@@ -51,6 +53,24 @@ namespace Voice
             restartTimer.Start();
         }
 
+        private static VoiceProfile GetOrAddProfile(SpeechSynthesizer synthesizer, Settings settings)
+        {
+            var voiceName = synthesizer.Voice.Name;
+            var voiceProfile = settings.ProfileCollection.Profiles.FirstOrDefault(x => x.Name == voiceName);
+
+            if (voiceProfile != null)
+            {
+                synthesizer.Rate = voiceProfile.Rate;
+                synthesizer.Volume = voiceProfile.Volume;
+                return voiceProfile;
+            }
+
+            var newProfile = new VoiceProfile {Name = voiceName, Volume = synthesizer.Volume, Rate = synthesizer.Rate};
+            settings.ProfileCollection.Profiles.Add(newProfile);
+
+            return newProfile;
+        }
+
         private void RestartTimerOnTick(object sender, EventArgs eventArgs)
         {
             if (speechSynthesizer.State != SynthesizerState.Ready)
@@ -62,18 +82,18 @@ namespace Voice
             Application.Restart();
         }
 
-        private void PopulateMenu()
+        private void PopulateMenu(VoiceProfile profile)
         {
             var menuItems = notifyIcon.ContextMenuStrip.Items;
 
-            var voicesMenuItem = new ToolStripMenuItem("Voices");
-            voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
+            var voicesMenuItem = new ToolStripMenuItem("Voices") {Name = "Voices"};
+            voicesMenuItem.DropDownItems.AddRange(GetVoiceItems(profile));
 
-            var rateMenuItem = new ToolStripMenuItem("Rate");
-            rateMenuItem.DropDownItems.AddRange(GetRateItems());
+            var rateMenuItem = new ToolStripMenuItem("Rate") {Name = "Rate"};
+            rateMenuItem.DropDownItems.AddRange(GetRateItems(profile));
 
-            var volumeMenuItem = new ToolStripMenuItem("Volume");
-            volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
+            var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
+            volumeMenuItem.DropDownItems.AddRange(GetVolumeItems(profile));
 
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
@@ -84,14 +104,14 @@ namespace Voice
             menuItems.Add(new ToolStripMenuItem("Exit", null, (_, __) => ExitThread()));
         }
 
-        private ToolStripItem[] GetVolumeItems()
+        private ToolStripItem[] GetVolumeItems(VoiceProfile profile)
         {
             var availableVolumes = new[] { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0 };
 
             return
                 availableVolumes.Select(volume => new ToolStripMenuItem(Convert.ToString(volume), null, OnVolumeItemClick)
                 {
-                    Checked = Settings.Default.Volume == volume
+                    Checked = profile.Volume == volume
                 }).Cast<ToolStripItem>().ToArray();
         }
 
@@ -99,23 +119,21 @@ namespace Voice
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            Settings.Default.Volume = Convert.ToInt32(toolStripMenuItem.Text);
+            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
+            voiceProfile.Volume = Convert.ToInt32(toolStripMenuItem.Text);
+            speechSynthesizer.Volume = voiceProfile.Volume;
+            
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Volume);
+
             Settings.Default.Save();
-
-            speechSynthesizer.Volume = Settings.Default.Volume;
-
-            foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
-            {
-                item.Checked = Settings.Default.Volume == Convert.ToInt32(item.Text);
-            }
         }
 
-        private ToolStripItem[] GetRateItems()
+        private ToolStripItem[] GetRateItems(VoiceProfile profile)
         {
             var availableRates = new[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10};
             return availableRates.Select(rate => new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
             {
-                Checked = Settings.Default.Rate == rate
+                Checked = profile.Rate == rate
             }).Cast<ToolStripItem>().ToArray();
         }
 
@@ -123,27 +141,21 @@ namespace Voice
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            Settings.Default.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
+            voiceProfile.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+            speechSynthesizer.Rate = voiceProfile.Rate;
+            
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Rate);
+
             Settings.Default.Save();
-
-            speechSynthesizer.Rate = Settings.Default.Rate;
-
-            foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
-            {
-                item.Checked = Settings.Default.Rate == Convert.ToInt32(item.Text);
-            }
         }
 
-        private ToolStripItem[] GetVoiceItems()
+        private ToolStripItem[] GetVoiceItems(VoiceProfile profile)
         {
-            var currentVoice = string.IsNullOrWhiteSpace(Settings.Default.Voice)
-                ? speechSynthesizer.Voice.Name // If no voice is set, use default from engine.
-                : Settings.Default.Voice;
-
             return speechSynthesizer.GetInstalledVoices()
                 .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
                 {
-                    Checked = currentVoice == voice.VoiceInfo.Name
+                    Checked = profile.Name == voice.VoiceInfo.Name
                 }).Cast<ToolStripItem>().ToArray();
         }
 
@@ -151,14 +163,31 @@ namespace Voice
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            Settings.Default.Voice = toolStripMenuItem.Text;
+            speechSynthesizer.SelectVoice(toolStripMenuItem.Text);
+            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
+            Settings.Default.CurrentVoice = voiceProfile.Name;
+
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Name);
+
+            var rateToolStripItem = (ToolStripMenuItem) notifyIcon.ContextMenuStrip.Items["Rate"];
+            ClearAndSetSelectedItem(rateToolStripItem.DropDownItems[0].Owner, voiceProfile.Rate);
+
+            var volumeToolStripItem = (ToolStripMenuItem)notifyIcon.ContextMenuStrip.Items["Volume"];
+            ClearAndSetSelectedItem(volumeToolStripItem.DropDownItems[0].Owner, voiceProfile.Volume);
+
             Settings.Default.Save();
+        }
 
-            speechSynthesizer.SelectVoice(Settings.Default.Voice);
+        private static void ClearAndSetSelectedItem(ToolStrip toolStrip, int value)
+        {
+            ClearAndSetSelectedItem(toolStrip, Convert.ToString(value));
+        }
 
-            foreach (ToolStripMenuItem item in toolStripMenuItem.Owner.Items)
+        private static void ClearAndSetSelectedItem(ToolStrip toolStrip, string value)
+        {
+            foreach (ToolStripMenuItem item in toolStrip.Items)
             {
-                item.Checked = Settings.Default.Voice == item.Text;
+                item.Checked = value == item.Text;
             }
         }
 
