@@ -14,5 +14,8 @@
     <Setting Name="ProfileCollection" Type="Voice.VoiceProfileCollection" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="Debug" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

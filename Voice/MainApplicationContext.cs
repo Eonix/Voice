@@ -2,8 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Speech.Synthesis;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Voice.Properties;
 
@@ -11,16 +9,14 @@ namespace Voice
 {
     public class MainApplicationContext : ApplicationContext
     {
-        private readonly Stopwatch lastSpeechStopwatch = new Stopwatch();
+        private readonly Stopwatch lastSpeechTimeout = new Stopwatch();
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
-        private readonly SpeechSynthesizer speechSynthesizer;
-
-        private bool listening;
+        private readonly Speaker speaker;
 
         public MainApplicationContext()
         {
-            speechSynthesizer = new SpeechSynthesizer();
+            speaker = new Speaker();
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
@@ -30,16 +26,7 @@ namespace Voice
                 Visible = true
             };
 
-            listening = Settings.Default.Listening;
-
-            var currentVoice = Settings.Default.CurrentVoice;
-            if (!string.IsNullOrWhiteSpace(currentVoice))
-                speechSynthesizer.SelectVoice(currentVoice);
-
-            if (Settings.Default.ProfileCollection == null)
-                Settings.Default.ProfileCollection = new VoiceProfileCollection();
-
-            PopulateMenu(GetOrAddProfile(speechSynthesizer, Settings.Default));
+            PopulateMenu();
 
             var notificationForm = new NotificationForm();
             components.Add(notificationForm);
@@ -53,65 +40,47 @@ namespace Voice
             restartTimer.Start();
         }
 
-        private static VoiceProfile GetOrAddProfile(SpeechSynthesizer synthesizer, Settings settings)
-        {
-            var voiceName = synthesizer.Voice.Name;
-            var voiceProfile = settings.ProfileCollection.Profiles.FirstOrDefault(x => x.Name == voiceName);
-
-            if (voiceProfile != null)
-            {
-                synthesizer.Rate = voiceProfile.Rate;
-                synthesizer.Volume = voiceProfile.Volume;
-                return voiceProfile;
-            }
-
-            var newProfile = new VoiceProfile {Name = voiceName, Volume = synthesizer.Volume, Rate = synthesizer.Rate};
-            settings.ProfileCollection.Profiles.Add(newProfile);
-
-            return newProfile;
-        }
-
         private void RestartTimerOnTick(object sender, EventArgs eventArgs)
         {
-            if (speechSynthesizer.State != SynthesizerState.Ready)
+            if (speaker.Speaking)
                 return;
 
-            if (lastSpeechStopwatch.Elapsed < TimeSpan.FromMinutes(5))
+            if (lastSpeechTimeout.Elapsed < TimeSpan.FromMinutes(5))
                 return;
             
             Application.Restart();
         }
 
-        private void PopulateMenu(VoiceProfile profile)
+        private void PopulateMenu()
         {
             var menuItems = notifyIcon.ContextMenuStrip.Items;
 
             var voicesMenuItem = new ToolStripMenuItem("Voices") {Name = "Voices"};
-            voicesMenuItem.DropDownItems.AddRange(GetVoiceItems(profile));
+            voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
             var rateMenuItem = new ToolStripMenuItem("Rate") {Name = "Rate"};
-            rateMenuItem.DropDownItems.AddRange(GetRateItems(profile));
+            rateMenuItem.DropDownItems.AddRange(GetRateItems());
 
             var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
-            volumeMenuItem.DropDownItems.AddRange(GetVolumeItems(profile));
+            volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
 
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(volumeMenuItem);
-            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = listening });
-            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, (_, __) => speechSynthesizer.SpeakAsyncCancelAll()));
+            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = speaker.Listening });
+            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, (_, __) => speaker.StopTalking()));
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, (_, __) => ExitThread()));
         }
 
-        private ToolStripItem[] GetVolumeItems(VoiceProfile profile)
+        private ToolStripItem[] GetVolumeItems()
         {
             var availableVolumes = new[] { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0 };
 
             return
                 availableVolumes.Select(volume => new ToolStripMenuItem(Convert.ToString(volume), null, OnVolumeItemClick)
                 {
-                    Checked = profile.Volume == volume
+                    Checked = speaker.Volume == volume
                 }).Cast<ToolStripItem>().ToArray();
         }
 
@@ -119,21 +88,16 @@ namespace Voice
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
-            voiceProfile.Volume = Convert.ToInt32(toolStripMenuItem.Text);
-            speechSynthesizer.Volume = voiceProfile.Volume;
-            
-            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Volume);
-
-            Settings.Default.Save();
+            speaker.Volume = Convert.ToInt32(toolStripMenuItem.Text);
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.Volume);
         }
 
-        private ToolStripItem[] GetRateItems(VoiceProfile profile)
+        private ToolStripItem[] GetRateItems()
         {
             var availableRates = new[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10};
             return availableRates.Select(rate => new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
             {
-                Checked = profile.Rate == rate
+                Checked = speaker.Rate == rate
             }).Cast<ToolStripItem>().ToArray();
         }
 
@@ -141,41 +105,31 @@ namespace Voice
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
-            voiceProfile.Rate = Convert.ToInt32(toolStripMenuItem.Text);
-            speechSynthesizer.Rate = voiceProfile.Rate;
-            
-            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Rate);
-
-            Settings.Default.Save();
+            speaker.Rate = Convert.ToInt32(toolStripMenuItem.Text);
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.Rate);
         }
 
-        private ToolStripItem[] GetVoiceItems(VoiceProfile profile)
+        private ToolStripItem[] GetVoiceItems()
         {
-            return speechSynthesizer.GetInstalledVoices()
-                .Select(voice => new ToolStripMenuItem(voice.VoiceInfo.Name, null, OnVoiceItemClick)
-                {
-                    Checked = profile.Name == voice.VoiceInfo.Name
-                }).Cast<ToolStripItem>().ToArray();
+            var currentVoice = speaker.CurrentVoice;
+            return speaker.Voices
+                .Select(voice => new ToolStripMenuItem(voice, null, OnVoiceItemClick) {Checked = currentVoice == voice})
+                .Cast<ToolStripItem>().ToArray();
         }
 
         private void OnVoiceItemClick(object sender, EventArgs eventArgs)
         {
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
-            speechSynthesizer.SelectVoice(toolStripMenuItem.Text);
-            var voiceProfile = GetOrAddProfile(speechSynthesizer, Settings.Default);
-            Settings.Default.CurrentVoice = voiceProfile.Name;
+            speaker.CurrentVoice = toolStripMenuItem.Text;
 
-            ClearAndSetSelectedItem(toolStripMenuItem.Owner, voiceProfile.Name);
+            ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.CurrentVoice);
 
             var rateToolStripItem = (ToolStripMenuItem) notifyIcon.ContextMenuStrip.Items["Rate"];
-            ClearAndSetSelectedItem(rateToolStripItem.DropDownItems[0].Owner, voiceProfile.Rate);
+            ClearAndSetSelectedItem(rateToolStripItem.DropDownItems[0].Owner, speaker.Rate);
 
             var volumeToolStripItem = (ToolStripMenuItem)notifyIcon.ContextMenuStrip.Items["Volume"];
-            ClearAndSetSelectedItem(volumeToolStripItem.DropDownItems[0].Owner, voiceProfile.Volume);
-
-            Settings.Default.Save();
+            ClearAndSetSelectedItem(volumeToolStripItem.DropDownItems[0].Owner, speaker.Volume);
         }
 
         private static void ClearAndSetSelectedItem(ToolStrip toolStrip, int value)
@@ -193,32 +147,17 @@ namespace Voice
 
         private void OnListeningClick(object sender, EventArgs eventArgs)
         {
-            var toolStripMenuItem = (ToolStripMenuItem) sender;
-            listening = !listening;
-            toolStripMenuItem.Checked = listening;
-
-            Settings.Default.Listening = listening;
-            Settings.Default.Save();
+            speaker.Listening = !speaker.Listening;
+            ((ToolStripMenuItem)sender).Checked = speaker.Listening;
         }
 
         private void ClipboardNotificationOnClipboardUpdate(object sender, IDataObject dataObject)
         {
-            if (!listening)
+            if (!speaker.Listening)
                 return;
 
-            lastSpeechStopwatch.Restart();
-
-            speechSynthesizer.SpeakAsyncCancelAll();
-            speechSynthesizer.SpeakAsync(ShortenUrls(Convert.ToString(dataObject.GetData(DataFormats.Text))));
-        }
-
-        private static string ShortenUrls(string content)
-        {
-            return Regex.Replace(content,
-                @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)",
-                match => Uri.TryCreate(match.ToString(), UriKind.RelativeOrAbsolute, out var result)
-                    ? result.Host
-                    : match.ToString());
+            lastSpeechTimeout.Restart();
+            speaker.Speak(Convert.ToString(dataObject.GetData(DataFormats.Text)));
         }
 
         protected override void Dispose(bool disposing)
@@ -226,7 +165,7 @@ namespace Voice
             if (disposing)
             {
                 components.Dispose();
-                speechSynthesizer.Dispose();
+                speaker.Dispose();
             }
 
             base.Dispose(disposing);

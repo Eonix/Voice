@@ -1,0 +1,124 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Speech.Synthesis;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Voice.Properties;
+
+namespace Voice
+{
+    public class Speaker : IDisposable
+    {
+        private readonly SpeechSynthesizer speechSynthesizer;
+
+        public Speaker()
+        {
+            speechSynthesizer = new SpeechSynthesizer();
+
+            if (string.IsNullOrWhiteSpace(CurrentVoice))
+                CurrentVoice = speechSynthesizer.Voice.Name;
+            else
+                speechSynthesizer.SelectVoice(CurrentVoice);
+
+            var profile = GetVoiceProfile(CurrentVoice);
+            speechSynthesizer.Volume = profile.Volume;
+            speechSynthesizer.Rate = profile.Rate;
+        }
+
+        public string CurrentVoice
+        {
+            get => Settings.Default.CurrentVoice;
+            set
+            {
+                StopTalking();
+                speechSynthesizer.SelectVoice(value);
+                Settings.Default.CurrentVoice = value;
+                Settings.Default.Save();
+            }
+        }
+
+        public bool Listening
+        {
+            get => Settings.Default.Listening;
+            set
+            {
+                StopTalking();
+                Settings.Default.Listening = value;
+                Settings.Default.Save();
+            }
+        }
+
+        public int Volume
+        {
+            get => GetVoiceProfile(CurrentVoice).Volume;
+            set
+            {
+                SetProfileProperty(x => x.Volume = value);
+                speechSynthesizer.Volume = value;
+            }
+        }
+
+        public int Rate
+        {
+            get => GetVoiceProfile(CurrentVoice).Rate;
+            set
+            {
+                SetProfileProperty(x => x.Rate = value);
+                speechSynthesizer.Rate = value;
+            }
+        }
+
+        public bool Speaking => speechSynthesizer.State != SynthesizerState.Ready;
+
+        public IEnumerable<string> Voices => speechSynthesizer.GetInstalledVoices().Select(x => x.VoiceInfo.Name);
+
+        public void Speak(string text)
+        {
+            speechSynthesizer.SpeakAsyncCancelAll();
+            speechSynthesizer.SpeakAsync(ShortenUrls(text));
+        }
+        
+        public void StopTalking()
+        {
+            speechSynthesizer.SpeakAsyncCancelAll();
+        }
+
+        private void SetProfileProperty(Action<VoiceProfile> action)
+        {
+            action(GetVoiceProfile(CurrentVoice));
+            Settings.Default.Save();
+        }
+        
+        private static string ShortenUrls(string content)
+        {
+            return Regex.Replace(content,
+                @"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)",
+                match => Uri.TryCreate(match.ToString(), UriKind.RelativeOrAbsolute, out var result)
+                    ? result.Host
+                    : match.ToString());
+        }
+
+        private VoiceProfile GetVoiceProfile(string voiceName)
+        {
+            if (Settings.Default.ProfileCollection == null)
+                Settings.Default.ProfileCollection = new VoiceProfileCollection();
+
+            var profile = Settings.Default.ProfileCollection.Profiles.SingleOrDefault(x => x.Name == voiceName);
+            if (profile != null)
+                return profile;
+
+            var newProfile = new VoiceProfile { Name = CurrentVoice, Volume = speechSynthesizer.Volume, Rate = speechSynthesizer.Rate };
+            Settings.Default.ProfileCollection.Profiles.Add(newProfile);
+            Settings.Default.Save();
+
+            return newProfile;
+        }
+        
+        public void Dispose()
+        {
+            speechSynthesizer.Dispose();
+        }
+    }
+}
