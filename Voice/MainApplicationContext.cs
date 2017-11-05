@@ -22,7 +22,7 @@ namespace Voice
             {
                 ContextMenuStrip = new ContextMenuStrip(),
                 Icon = Resources.icon,
-                Text = @"Voice",
+                Text = Resources.Voice,
                 Visible = true
             };
 
@@ -55,22 +55,22 @@ namespace Voice
         {
             var menuItems = notifyIcon.ContextMenuStrip.Items;
 
-            var voicesMenuItem = new ToolStripMenuItem("Voices") {Name = "Voices"};
+            var voicesMenuItem = new ToolStripMenuItem(Resources.Voices) {Name = "Voices"};
             voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
-            var rateMenuItem = new ToolStripMenuItem("Rate") {Name = "Rate"};
+            var rateMenuItem = new ToolStripMenuItem(Resources.Rate) {Name = "Rate"};
             rateMenuItem.DropDownItems.AddRange(GetRateItems());
 
-            var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
+            var volumeMenuItem = new ToolStripMenuItem(Resources.Volume) {Name = "Volume"};
             volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
 
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(volumeMenuItem);
-            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = speaker.Listening });
-            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, (_, __) => speaker.StopTalking()));
+            menuItems.Add(new ToolStripMenuItem(Resources.Listening, null, OnListeningClick) { Checked = speaker.Listening });
+            menuItems.Add(new ToolStripMenuItem(Resources.StopTalking, null, (_, __) => speaker.StopTalking()));
             menuItems.Add(new ToolStripSeparator());
-            menuItems.Add(new ToolStripMenuItem("Exit", null, (_, __) => ExitThread()));
+            menuItems.Add(new ToolStripMenuItem(Resources.Exit, null, (_, __) => ExitThread()));
         }
 
         private ToolStripItem[] GetVolumeItems()

@@ -9,7 +9,7 @@ using Voice.Properties;
 
 namespace Voice
 {
-    public class Speaker : IDisposable
+    public sealed class Speaker : IDisposable
     {
         private readonly SpeechSynthesizer speechSynthesizer;
 

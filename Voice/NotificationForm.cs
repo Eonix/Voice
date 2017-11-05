@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Voice
@@ -23,14 +24,14 @@ namespace Voice
             {
                 case drawClipboard:
                     ClipboardUpdate?.Invoke(Clipboard.GetText());
-                    NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam);
+                    Marshal.ThrowExceptionForHR(NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam));
                     break;
 
                 case changeClipboardChain:
                     if (m.WParam == nextClipboardViewer)
                         nextClipboardViewer = m.LParam;
                     else
-                        NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam);
+                        Marshal.ThrowExceptionForHR(NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam));
                     break;
                 default:
                     base.WndProc(ref m);
