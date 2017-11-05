@@ -5,7 +5,7 @@ namespace Voice
 {
     public class NotificationForm : Form
     {
-        public event EventHandler<IDataObject> ClipboardUpdate;
+        public Action<string> ClipboardUpdate;
         private IntPtr nextClipboardViewer;
 
         public NotificationForm()
@@ -16,17 +16,17 @@ namespace Voice
         protected override void WndProc(ref Message m)
         {
             // defined in winuser.h
-            const int WM_DRAWCLIPBOARD = 0x308;
-            const int WM_CHANGECBCHAIN = 0x030D;
+            const int drawClipboard = 0x308; // WM_DRAWCLIPBOARD
+            const int changeClipboardChain = 0x030D; // WM_CHANGECBCHAIN
 
             switch (m.Msg)
             {
-                case WM_DRAWCLIPBOARD:
-                    ClipboardUpdate?.Invoke(null, Clipboard.GetDataObject());
+                case drawClipboard:
+                    ClipboardUpdate?.Invoke(Clipboard.GetText());
                     NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam);
                     break;
 
-                case WM_CHANGECBCHAIN:
+                case changeClipboardChain:
                     if (m.WParam == nextClipboardViewer)
                         nextClipboardViewer = m.LParam;
                     else

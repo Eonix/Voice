@@ -151,13 +151,13 @@ namespace Voice
             ((ToolStripMenuItem)sender).Checked = speaker.Listening;
         }
 
-        private void ClipboardNotificationOnClipboardUpdate(object sender, IDataObject dataObject)
+        private void ClipboardNotificationOnClipboardUpdate(string text)
         {
             if (!speaker.Listening)
                 return;
 
             lastSpeechTimeout.Restart();
-            speaker.Speak(Convert.ToString(dataObject.GetData(DataFormats.Text)));
+            speaker.Speak(text);
         }
 
         protected override void Dispose(bool disposing)
