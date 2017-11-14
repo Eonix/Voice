@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Speech.Synthesis;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Voice.Properties;
 
 namespace Voice
@@ -20,11 +18,7 @@ namespace Voice
             if (string.IsNullOrWhiteSpace(CurrentVoice))
                 CurrentVoice = speechSynthesizer.Voice.Name;
             else
-                speechSynthesizer.SelectVoice(CurrentVoice);
-
-            var profile = GetVoiceProfile(CurrentVoice);
-            speechSynthesizer.Volume = profile.Volume;
-            speechSynthesizer.Rate = profile.Rate;
+                ChangeVoiceProfile(CurrentVoice);
         }
 
         public string CurrentVoice
@@ -33,7 +27,8 @@ namespace Voice
             set
             {
                 StopTalking();
-                speechSynthesizer.SelectVoice(value);
+                ChangeVoiceProfile(value);
+                
                 Settings.Default.CurrentVoice = value;
                 Settings.Default.Save();
             }
@@ -83,6 +78,14 @@ namespace Voice
         public void StopTalking()
         {
             speechSynthesizer.SpeakAsyncCancelAll();
+        }
+
+        private void ChangeVoiceProfile(string voiceName)
+        {
+            var profile = GetVoiceProfile(voiceName);
+            speechSynthesizer.SelectVoice(voiceName);
+            speechSynthesizer.Volume = profile.Volume;
+            speechSynthesizer.Rate = profile.Rate;
         }
 
         private void SetProfileProperty(Action<VoiceProfile> action)
