@@ -112,7 +112,7 @@ namespace Voice
             if (profile != null)
                 return profile;
 
-            var newProfile = new VoiceProfile { Name = CurrentVoice, Volume = speechSynthesizer.Volume, Rate = speechSynthesizer.Rate };
+            var newProfile = new VoiceProfile { Name = voiceName, Volume = speechSynthesizer.Volume, Rate = speechSynthesizer.Rate };
             Settings.Default.ProfileCollection.Profiles.Add(newProfile);
             Settings.Default.Save();
 
