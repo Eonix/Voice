@@ -16,7 +16,7 @@ namespace Voice
 
         public MainApplicationContext()
         {
-            speaker = new Speaker();
+            speaker = new Speaker((speaking) => { notifyIcon.Icon = speaking ? Resources.icon_inverted : Resources.icon; });
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {

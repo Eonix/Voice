@@ -11,9 +11,13 @@ namespace Voice
     {
         private readonly SpeechSynthesizer speechSynthesizer;
 
-        public Speaker()
+        public Speaker(Action<bool> speechEventHandler)
         {
             speechSynthesizer = new SpeechSynthesizer();
+            speechSynthesizer.StateChanged += (sender, args) => 
+            {
+                speechEventHandler(args.State == SynthesizerState.Speaking);
+            };
 
             if (string.IsNullOrWhiteSpace(CurrentVoice))
                 CurrentVoice = speechSynthesizer.Voice.Name;
