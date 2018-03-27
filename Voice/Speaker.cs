@@ -75,7 +75,11 @@ namespace Voice
 
         public void Speak(string text)
         {
-            speechSynthesizer.SpeakAsyncCancelAll();
+            // Only one prompt should exist at any time, so get the current one and cancel it if it's not finished.
+            var prompt = speechSynthesizer.GetCurrentlySpokenPrompt();
+            if (speechSynthesizer.State != SynthesizerState.Ready && prompt != null)
+                speechSynthesizer.SpeakAsyncCancel(prompt);
+            
             speechSynthesizer.SpeakAsync(ShortenUrls(text));
         }
         
