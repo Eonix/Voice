@@ -48,6 +48,7 @@ namespace Voice
             if (lastSpeechTimeout.Elapsed < TimeSpan.FromMinutes(5))
                 return;
             
+            Trace.WriteLine(DateTime.Now + ": Restarting application.");
             Application.Restart();
         }
 
@@ -68,9 +69,21 @@ namespace Voice
             menuItems.Add(rateMenuItem);
             menuItems.Add(volumeMenuItem);
             menuItems.Add(new ToolStripMenuItem(Resources.Listening, null, OnListeningClick) { Checked = speaker.Listening });
-            menuItems.Add(new ToolStripMenuItem(Resources.StopTalking, null, (_, __) => speaker.StopTalking()));
+            menuItems.Add(new ToolStripMenuItem(Resources.StopTalking, null, OnStopTalkingClick));
             menuItems.Add(new ToolStripSeparator());
-            menuItems.Add(new ToolStripMenuItem(Resources.Exit, null, (_, __) => ExitThread()));
+            menuItems.Add(new ToolStripMenuItem(Resources.Exit, null, OnExitClick));
+        }
+
+        private void OnStopTalkingClick(object sender, EventArgs args)
+        {
+            Trace.WriteLine(DateTime.Now + ": Talking stopped.");
+            speaker.StopTalking();
+        }
+
+        private void OnExitClick(object sender, EventArgs args)
+        {
+            Trace.WriteLine(DateTime.Now + ": Application exited.");
+            ExitThread();
         }
 
         private ToolStripItem[] GetVolumeItems()

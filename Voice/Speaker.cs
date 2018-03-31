@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Speech.Synthesis;
 using System.Text.RegularExpressions;
@@ -75,12 +76,19 @@ namespace Voice
 
         public void Speak(string text)
         {
+            Trace.WriteLine($"{DateTime.Now}: Speaking text of length {text?.Length ?? 0}.");
+
             // Only one prompt should exist at any time, so get the current one and cancel it if it's not finished.
-            var prompt = speechSynthesizer.GetCurrentlySpokenPrompt();
-            if (speechSynthesizer.State != SynthesizerState.Ready && prompt != null)
-                speechSynthesizer.SpeakAsyncCancel(prompt);
-            
-            speechSynthesizer.SpeakAsync(ShortenUrls(text));
+            if (speechSynthesizer.State != SynthesizerState.Ready)
+            {
+                Trace.WriteLine(DateTime.Now + ": Cancelling previous speech.");
+                speechSynthesizer.SpeakAsyncCancel(speechSynthesizer.GetCurrentlySpokenPrompt());
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+                Trace.WriteLine(DateTime.Now + ": Text is empty. Skipping speech.");
+            else
+                speechSynthesizer.SpeakAsync(ShortenUrls(text));
         }
         
         public void StopTalking()
