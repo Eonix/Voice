@@ -24,13 +24,13 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>https://raw.githubusercontent.com/Eonix/Voice/publish/Voice/Voice/publish/</InstallUrl>
-    <UpdateUrl>https://raw.githubusercontent.com/Eonix/Voice/publish/Voice/Voice/publish/</UpdateUrl>
+    <InstallUrl>https://raw.githubusercontent.com/Eonix/Voice/publish/Voice/publish/</InstallUrl>
+    <UpdateUrl>https://raw.githubusercontent.com/Eonix/Voice/publish/Voice/publish/</UpdateUrl>
     <ProductName>Voice</ProductName>
     <PublisherName>Martin Aakjær</PublisherName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.4.2.0</ApplicationVersion>
+    <ApplicationVersion>1.4.3.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
