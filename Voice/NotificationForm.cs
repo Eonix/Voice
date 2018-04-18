@@ -6,43 +6,43 @@ namespace Voice
 {
     public class NotificationForm : Form
     {
+        private static class NativeMethods
+        {
+            /// <summary>
+            /// Places the given window in the system-maintained clipboard format listener list.
+            /// </summary>
+            [DllImport("User32.dll", SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+            /// <summary>
+            /// Removes the given window from the system-maintained clipboard format listener list.
+            /// </summary>
+            [DllImport("User32.dll", SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+        }
+
         public Action<string> ClipboardUpdate;
-        private IntPtr nextClipboardViewer;
 
         public NotificationForm()
         {
-            nextClipboardViewer = (IntPtr)NativeMethods.SetClipboardViewer((int)Handle);
+            NativeMethods.AddClipboardFormatListener(Handle);
         }
 
         protected override void WndProc(ref Message m)
         {
-            // defined in winuser.h
-            const int drawClipboard = 0x308; // WM_DRAWCLIPBOARD
-            const int changeClipboardChain = 0x030D; // WM_CHANGECBCHAIN
+            base.WndProc(ref m);
+            const int WM_CLIPBOARDUPDATE = 0x031D; // Sent when the contents of the clipboard have changed.
 
-            switch (m.Msg)
-            {
-                case drawClipboard:
-                    ClipboardUpdate?.Invoke(Clipboard.GetText());
-                    Marshal.ThrowExceptionForHR(NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam));
-                    break;
-
-                case changeClipboardChain:
-                    if (m.WParam == nextClipboardViewer)
-                        nextClipboardViewer = m.LParam;
-                    else
-                        Marshal.ThrowExceptionForHR(NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam));
-                    break;
-                default:
-                    base.WndProc(ref m);
-                    break;
-            }
+            if (m.Msg == WM_CLIPBOARDUPDATE)
+                ClipboardUpdate?.Invoke(Clipboard.GetText());
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
-                NativeMethods.ChangeClipboardChain(this.Handle, nextClipboardViewer);
+                NativeMethods.RemoveClipboardFormatListener(Handle);
 
             base.Dispose(disposing);
         }
