@@ -145,4 +145,7 @@
   <data name="icon_inverted" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\icon-inverted.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="icon_grayed" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\icon-grayed.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

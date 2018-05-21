@@ -82,6 +82,16 @@ namespace Voice.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon icon_grayed {
+            get {
+                object obj = ResourceManager.GetObject("icon_grayed", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon icon_inverted {
             get {
                 object obj = ResourceManager.GetObject("icon_inverted", resourceCulture);

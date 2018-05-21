@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Voice.Properties;
@@ -16,12 +17,12 @@ namespace Voice
 
         public MainApplicationContext()
         {
-            speaker = new Speaker((speaking) => { notifyIcon.Icon = speaking ? Resources.icon_inverted : Resources.icon; });
+            speaker = new Speaker((speaking) => notifyIcon.Icon = speaking ? Resources.icon_inverted : Resources.icon);
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
                 ContextMenuStrip = new ContextMenuStrip(),
-                Icon = Resources.icon,
+                Icon = GetNotifyIconState(),
                 Text = Resources.Voice,
                 Visible = true
             };
@@ -38,6 +39,11 @@ namespace Voice
             restartTimer.Tick += RestartTimerOnTick;
             restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
             restartTimer.Start();
+        }
+
+        private Icon GetNotifyIconState()
+        {
+            return speaker.Listening ? Resources.icon : Resources.icon_grayed;
         }
 
         private void RestartTimerOnTick(object sender, EventArgs eventArgs)
@@ -162,6 +168,7 @@ namespace Voice
         {
             speaker.Listening = !speaker.Listening;
             ((ToolStripMenuItem)sender).Checked = speaker.Listening;
+            notifyIcon.Icon = GetNotifyIconState();
         }
 
         private void ClipboardNotificationOnClipboardUpdate(string text)
