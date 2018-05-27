@@ -78,10 +78,12 @@ namespace Voice
         {
             Trace.WriteLine($"{DateTime.Now}: Speaking text of length {text?.Length ?? 0}.");
 
-            if (speechSynthesizer.State != SynthesizerState.Ready)
+            // Only one prompt should exist at any time, so get the current one and cancel it if it's not finished.
+            var currentlySpokenPrompt = speechSynthesizer.GetCurrentlySpokenPrompt();
+            if (speechSynthesizer.State != SynthesizerState.Ready && currentlySpokenPrompt != null)
             {
                 Trace.WriteLine(DateTime.Now + ": Cancelling previous speech.");
-                speechSynthesizer.SpeakAsyncCancelAll();
+                speechSynthesizer.SpeakAsyncCancel(currentlySpokenPrompt);
             }
 
             if (string.IsNullOrWhiteSpace(text))
