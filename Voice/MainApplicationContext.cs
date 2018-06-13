@@ -54,7 +54,6 @@ namespace Voice
             if (lastSpeechTimeout.Elapsed < TimeSpan.FromMinutes(5))
                 return;
             
-            Trace.WriteLine(DateTime.Now + ": Restarting application.");
             Application.Restart();
         }
 
@@ -82,13 +81,11 @@ namespace Voice
 
         private void OnStopTalkingClick(object sender, EventArgs args)
         {
-            Trace.WriteLine(DateTime.Now + ": Talking stopped.");
             speaker.StopTalking();
         }
 
         private void OnExitClick(object sender, EventArgs args)
         {
-            Trace.WriteLine(DateTime.Now + ": Application exited.");
             ExitThread();
         }
 

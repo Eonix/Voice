@@ -15,10 +15,7 @@ namespace Voice
         public Speaker(Action<bool> speechEventHandler)
         {
             speechSynthesizer = new SpeechSynthesizer();
-            speechSynthesizer.StateChanged += (sender, args) => 
-            {
-                speechEventHandler(args.State == SynthesizerState.Speaking);
-            };
+            speechSynthesizer.StateChanged += (sender, args) => speechEventHandler(args.State == SynthesizerState.Speaking);
 
             if (string.IsNullOrWhiteSpace(CurrentVoice))
                 CurrentVoice = speechSynthesizer.Voice.Name;
@@ -76,19 +73,12 @@ namespace Voice
 
         public void Speak(string text)
         {
-            Trace.WriteLine($"{DateTime.Now}: Speaking text of length {text?.Length ?? 0}.");
-
             // Only one prompt should exist at any time, so get the current one and cancel it if it's not finished.
             var currentlySpokenPrompt = speechSynthesizer.GetCurrentlySpokenPrompt();
             if (speechSynthesizer.State != SynthesizerState.Ready && currentlySpokenPrompt != null)
-            {
-                Trace.WriteLine(DateTime.Now + ": Cancelling previous speech.");
                 speechSynthesizer.SpeakAsyncCancel(currentlySpokenPrompt);
-            }
 
-            if (string.IsNullOrWhiteSpace(text))
-                Trace.WriteLine(DateTime.Now + ": Text is empty. Skipping speech.");
-            else
+            if (!string.IsNullOrWhiteSpace(text))
                 speechSynthesizer.SpeakAsync(ShortenUrls(text));
         }
         
