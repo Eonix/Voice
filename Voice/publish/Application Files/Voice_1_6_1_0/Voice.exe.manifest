@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asmv1:assembly xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" manifestVersion="1.0" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:co.v2="urn:schemas-microsoft-com:clickonce.v2">
+  <asmv1:assemblyIdentity name="Voice.exe" version="1.6.1.0" publicKeyToken="c627189b180ba93d" language="neutral" processorArchitecture="msil" type="win32" />
+  <description asmv2:iconFile="icon.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
+  <application />
+  <entryPoint>
+    <assemblyIdentity name="Voice" version="1.2.3.0" language="neutral" processorArchitecture="msil" />
+    <commandLine file="Voice.exe" parameters="" />
+  </entryPoint>
+  <trustInfo>
+    <security>
+      <applicationRequestMinimum>
+        <PermissionSet Unrestricted="true" ID="Custom" SameSite="site" />
+        <defaultAssemblyRequest permissionSetReference="Custom" />
+      </applicationRequestMinimum>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!--
+          UAC Manifest Options
+          If you want to change the Windows User Account Control level replace the 
+          requestedExecutionLevel node with one of the following.
+
+        <requestedExecutionLevel  level="asInvoker" uiAccess="false" />
+        <requestedExecutionLevel  level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel  level="highestAvailable" uiAccess="false" />
+
+         If you want to utilize File and Registry Virtualization for backward 
+         compatibility then delete the requestedExecutionLevel node.
+    -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentOS>
+      <osVersionInfo>
+        <os majorVersion="5" minorVersion="1" buildNumber="2600" servicePackMajor="0" />
+      </osVersionInfo>
+    </dependentOS>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Windows.CommonLanguageRuntime" version="4.0.30319.0" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Voice.exe" size="834392">
+      <assemblyIdentity name="Voice" version="1.2.3.0" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+        <dsig:DigestValue>/joUs9vvb1wUg/VS1Mv88o+G9vNWy4x3zKMiOZE0Vxg=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <file name="icon.ico" size="370070">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>obcd85dEYDeg3orJTs/LmNarRjdqDY1rXqByDUPjF0M=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="icon-grayed.ico" size="35136">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>xcn8/FshThxaObTNcDP0TkFTvQTc41Wf2uu1+CkWTTI=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="icon-inverted.ico" size="35139">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>Jd7zsIfP8jrC3sqIFiiEW/8uZIW9LZgQRg+gAeR2WwM=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Voice.exe.config" size="1149">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>gkG6OKxwFuUSVkcXW4PIHQNwiYtv5UTZ9A+YrLhokm4=</dsig:DigestValue>
+    </hash>
+  </file>
+<publisherIdentity name="CN=Martin Aakjær" issuerKeyHash="d7cb7823208587ecd6b56ba4b4186259ac3d08f8" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>rHSr0o4wDcck6Wr+OCB09jnAPR8=</DigestValue></Reference></SignedInfo><SignatureValue>DgJBQXEH9KSSGm3TB8h+I/zfCCVDIdpY4OIT3gzzAq93V2MYjD31i15NrCKPq0FBuDp2jHaMA41IsZPk6jwdoCNcNu5T+4ccrK7n9wlEdon7sQIxjrVi+mtukdC3Yp/PJ1B1B5wpJUpp/WlQDUcJugO1P9L83LRRY8+qQoIu2nms6hoCJmZDSOnboCvu2rLqZMAjYdEU1WifibmdSPq1Y1VPqG3uPvzPwgMKZlBdrG7d0gxleG8sVf+KbvT4wyrx+s506L5TAph5AhcS1hi4iugGRPnPuV4fG5GyDgbKHgsEy6fUeUxXhR8dXgMUiAmK1U/1h+HR+5xz72VyinqI0A==</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>yZ2fAcLQvIBWM1K4PMIQfhpjVKDIdNVfufHOYBICkaWFO16QgGaI/ImBs1O+g1MFsHiUcB3RnyRLc5JesihIrfTaxok3CFMg+HqPsOr9yAffqHatPVVsWCFaskwWYTunt8D7umVLMocV2rXnilG2JhLd5lSE4YtBo7fXYYZQLoQI3x+hXmP6B8ws3iDRuPn9ldEgQouYvyjEWF+0wNGoYIf7Tktep5KLulGluSOHtksiPA+v10BR12DDRl2GcqRAvCHOjL1JeQPcbeMXIIvJJWkOoFV2njdEr9nvgvMZPTe2yHwd8BHMSqnH9QLLnJEABN6CmWEsXOZvfM3c110B/Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="1f3dc039f6742038fe6ae924c70d308ed2ab74ac" Description="" Url=""><as:assemblyIdentity name="Voice.exe" version="1.6.1.0" publicKeyToken="c627189b180ba93d" language="neutral" processorArchitecture="msil" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=Martin Aakjær</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>eBIeVYHsvHYFbs+84UG91qi5Lts=</DigestValue></Reference></SignedInfo><SignatureValue>EdjZfgg0svjS/DoJf623mN3tueOKttsKB23Wg86T4jTQZNOnn0S0U7LQchHjt7SET7fbKYwqjtMwh32i7MG0CAqUZXtgy389vqzhswNPSOaQPbs7VvkEEMUBXJbXk/xzVdH3Dg414tONNQa1QV9KfwVt3HwhQY8SzWn0kXfP1HPG/AchZnj7fkht1QG0fnbMpvIdqPvt3PTuTxtys2imkE5Fn2wYzW/Id/PzhtASw5ASRve2LwpU4w5I42IsQq3U1G3M11nNs1NiZR+248qQ7At7qSJza8bNJmIU4fvu98yC5b/28riCMtLgenVb+lJWyE/F93R5PGaErh9DwJwnzQ==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>yZ2fAcLQvIBWM1K4PMIQfhpjVKDIdNVfufHOYBICkaWFO16QgGaI/ImBs1O+g1MFsHiUcB3RnyRLc5JesihIrfTaxok3CFMg+HqPsOr9yAffqHatPVVsWCFaskwWYTunt8D7umVLMocV2rXnilG2JhLd5lSE4YtBo7fXYYZQLoQI3x+hXmP6B8ws3iDRuPn9ldEgQouYvyjEWF+0wNGoYIf7Tktep5KLulGluSOHtksiPA+v10BR12DDRl2GcqRAvCHOjL1JeQPcbeMXIIvJJWkOoFV2njdEr9nvgvMZPTe2yHwd8BHMSqnH9QLLnJEABN6CmWEsXOZvfM3c110B/Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIDAjCCAeqgAwIBAgIQX9hksf9JxbdBz0vWhHnc8zANBgkqhkiG9w0BAQUFADAZMRcwFQYDVQQDDA5NYXJ0aW4gQWFrasOmcjAeFw0xODA1MjcwNjM2MTVaFw0yMzA1MjcwNjQ2MTVaMBkxFzAVBgNVBAMMDk1hcnRpbiBBYWtqw6ZyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyZ2fAcLQvIBWM1K4PMIQfhpjVKDIdNVfufHOYBICkaWFO16QgGaI/ImBs1O+g1MFsHiUcB3RnyRLc5JesihIrfTaxok3CFMg+HqPsOr9yAffqHatPVVsWCFaskwWYTunt8D7umVLMocV2rXnilG2JhLd5lSE4YtBo7fXYYZQLoQI3x+hXmP6B8ws3iDRuPn9ldEgQouYvyjEWF+0wNGoYIf7Tktep5KLulGluSOHtksiPA+v10BR12DDRl2GcqRAvCHOjL1JeQPcbeMXIIvJJWkOoFV2njdEr9nvgvMZPTe2yHwd8BHMSqnH9QLLnJEABN6CmWEsXOZvfM3c110B/QIDAQABo0YwRDAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwMwHQYDVR0OBBYEFNfLeCMghYfs1rVrpLQYYlmsPQj4MA0GCSqGSIb3DQEBBQUAA4IBAQAgaBoSj2RKb2vBULNAcKWgA64WK4rv+4T82TjmQqh0tC6Ezns6eRawERf45fZmyF4IK67hW2YJofUVkKaCr6zeOIcQk7cC+5JmWaQljlvrTBhwhdSq6aJNK20VrWNOAUclG6pB7BZgFgld45XzhIKrFYuXx9ZSpwYHS/gumj/7W8nR6pgjIIcCzVSsv9m0iS7bWpXgoOatiLSqDeRj9MggokWzjV82JROaYv054sS8kE/vyO5XT6FpJ+3nmfFjAKOg0+AavdteAbtfjvzS7aZLMPqBa61wavbOXg+to7zD0QbCAnFEEdFQ61fNF+SmLNSDl4itEuniBYRwlLUQBv8b</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>
