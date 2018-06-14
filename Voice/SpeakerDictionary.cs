@@ -44,7 +44,7 @@ namespace Voice
 
             foreach (var pair in File.ReadAllLines(path).Where(x => !x.StartsWith("#")).Select(x => x.Split('=')))
             {
-                entries.Add(pair[0]?.Trim() ?? string.Empty, pair[1]?.Trim() ?? string.Empty);
+                entries.Add(pair[0]?.Trim().ToLower() ?? string.Empty, pair[1]?.Trim() ?? string.Empty);
             }
         }
 
@@ -53,9 +53,9 @@ namespace Voice
             var words = text.Split(' ');
             for (int i = 0; i < words.Length; i++)
             {
-                var word = words[i];
+                var word = words[i].ToLower();
                 if (entries.TryGetValue(word, out var replacement))
-                    words[i] = word.Replace(word.TrimEnd('.', '!', '?'), replacement);
+                    words[i] = word.Replace(word.TrimEnd('.', '!', '?', ',', ';'), replacement);
             }
             
             return string.Join(" ", words);
