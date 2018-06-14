@@ -49,7 +49,7 @@ namespace Voice
 
         public int Volume
         {
-            get => GetVoiceProfile(CurrentVoice).Volume;
+            get => GetOrCreateVoiceProfile(CurrentVoice).Volume;
             set
             {
                 SetProfileProperty(x => x.Volume = value);
@@ -59,7 +59,7 @@ namespace Voice
 
         public int Rate
         {
-            get => GetVoiceProfile(CurrentVoice).Rate;
+            get => GetOrCreateVoiceProfile(CurrentVoice).Rate;
             set
             {
                 SetProfileProperty(x => x.Rate = value);
@@ -89,7 +89,7 @@ namespace Voice
 
         private void ChangeVoiceProfile(string voiceName)
         {
-            var profile = GetVoiceProfile(voiceName);
+            var profile = GetOrCreateVoiceProfile(voiceName);
             speechSynthesizer.SelectVoice(voiceName);
             speechSynthesizer.Volume = profile.Volume;
             speechSynthesizer.Rate = profile.Rate;
@@ -97,7 +97,7 @@ namespace Voice
 
         private void SetProfileProperty(Action<VoiceProfile> action)
         {
-            action(GetVoiceProfile(CurrentVoice));
+            action(GetOrCreateVoiceProfile(CurrentVoice));
             Settings.Default.Save();
         }
         
@@ -110,7 +110,7 @@ namespace Voice
                     : match.ToString());
         }
 
-        private VoiceProfile GetVoiceProfile(string voiceName)
+        private VoiceProfile GetOrCreateVoiceProfile(string voiceName)
         {
             if (Settings.Default.ProfileCollection == null)
                 Settings.Default.ProfileCollection = new VoiceProfileCollection();
