@@ -15,10 +15,7 @@ namespace Voice
         public Speaker(Action<bool> speechEventHandler)
         {
             speechSynthesizer = new SpeechSynthesizer();
-            speechSynthesizer.StateChanged += (sender, args) => 
-            {
-                speechEventHandler(args.State == SynthesizerState.Speaking);
-            };
+            speechSynthesizer.StateChanged += (sender, args) => speechEventHandler(args.State == SynthesizerState.Speaking);
 
             if (string.IsNullOrWhiteSpace(CurrentVoice))
                 CurrentVoice = speechSynthesizer.Voice.Name;
@@ -52,7 +49,7 @@ namespace Voice
 
         public int Volume
         {
-            get => GetVoiceProfile(CurrentVoice).Volume;
+            get => GetOrCreateVoiceProfile(CurrentVoice).Volume;
             set
             {
                 SetProfileProperty(x => x.Volume = value);
@@ -62,7 +59,7 @@ namespace Voice
 
         public int Rate
         {
-            get => GetVoiceProfile(CurrentVoice).Rate;
+            get => GetOrCreateVoiceProfile(CurrentVoice).Rate;
             set
             {
                 SetProfileProperty(x => x.Rate = value);
@@ -76,19 +73,12 @@ namespace Voice
 
         public void Speak(string text)
         {
-            Trace.WriteLine($"{DateTime.Now}: Speaking text of length {text?.Length ?? 0}.");
-
             // Only one prompt should exist at any time, so get the current one and cancel it if it's not finished.
             var currentlySpokenPrompt = speechSynthesizer.GetCurrentlySpokenPrompt();
             if (speechSynthesizer.State != SynthesizerState.Ready && currentlySpokenPrompt != null)
-            {
-                Trace.WriteLine(DateTime.Now + ": Cancelling previous speech.");
                 speechSynthesizer.SpeakAsyncCancel(currentlySpokenPrompt);
-            }
 
-            if (string.IsNullOrWhiteSpace(text))
-                Trace.WriteLine(DateTime.Now + ": Text is empty. Skipping speech.");
-            else
+            if (!string.IsNullOrWhiteSpace(text))
                 speechSynthesizer.SpeakAsync(ShortenUrls(text));
         }
         
@@ -99,7 +89,7 @@ namespace Voice
 
         private void ChangeVoiceProfile(string voiceName)
         {
-            var profile = GetVoiceProfile(voiceName);
+            var profile = GetOrCreateVoiceProfile(voiceName);
             speechSynthesizer.SelectVoice(voiceName);
             speechSynthesizer.Volume = profile.Volume;
             speechSynthesizer.Rate = profile.Rate;
@@ -107,7 +97,7 @@ namespace Voice
 
         private void SetProfileProperty(Action<VoiceProfile> action)
         {
-            action(GetVoiceProfile(CurrentVoice));
+            action(GetOrCreateVoiceProfile(CurrentVoice));
             Settings.Default.Save();
         }
         
@@ -120,7 +110,7 @@ namespace Voice
                     : match.ToString());
         }
 
-        private VoiceProfile GetVoiceProfile(string voiceName)
+        private VoiceProfile GetOrCreateVoiceProfile(string voiceName)
         {
             if (Settings.Default.ProfileCollection == null)
                 Settings.Default.ProfileCollection = new VoiceProfileCollection();

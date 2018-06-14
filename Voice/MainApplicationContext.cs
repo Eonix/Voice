@@ -14,16 +14,18 @@ namespace Voice
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
         private readonly Speaker speaker;
+        private readonly SpeakerDictionary speakerDictionary;
 
         public MainApplicationContext()
         {
             speaker = new Speaker((speaking) => notifyIcon.Icon = speaking ? Resources.icon_inverted : Resources.icon);
+            speakerDictionary = new SpeakerDictionary();
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
                 ContextMenuStrip = new ContextMenuStrip(),
                 Icon = GetNotifyIconState(),
-                Text = Resources.Voice,
+                Text = "Voice",
                 Visible = true
             };
 
@@ -39,6 +41,8 @@ namespace Voice
             restartTimer.Tick += RestartTimerOnTick;
             restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
             restartTimer.Start();
+
+            speakerDictionary.ReloadDictionary(speaker.CurrentVoice);
         }
 
         private Icon GetNotifyIconState()
@@ -54,7 +58,6 @@ namespace Voice
             if (lastSpeechTimeout.Elapsed < TimeSpan.FromMinutes(5))
                 return;
             
-            Trace.WriteLine(DateTime.Now + ": Restarting application.");
             Application.Restart();
         }
 
@@ -62,33 +65,33 @@ namespace Voice
         {
             var menuItems = notifyIcon.ContextMenuStrip.Items;
 
-            var voicesMenuItem = new ToolStripMenuItem(Resources.Voices) {Name = "Voices"};
+            var voicesMenuItem = new ToolStripMenuItem("Voices") {Name = "Voices"};
             voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
-            var rateMenuItem = new ToolStripMenuItem(Resources.Rate) {Name = "Rate"};
+            var rateMenuItem = new ToolStripMenuItem("Speech Rate") {Name = "Rate"};
             rateMenuItem.DropDownItems.AddRange(GetRateItems());
 
-            var volumeMenuItem = new ToolStripMenuItem(Resources.Volume) {Name = "Volume"};
+            var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
             volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
 
+            menuItems.Add(new ToolStripMenuItem("Open dictionary...", null, (_, __) => speakerDictionary.OpenDictionary(speaker.CurrentVoice)));
+            menuItems.Add(new ToolStripMenuItem("Reload dictionary", null, (_, __) => speakerDictionary.ReloadDictionary(speaker.CurrentVoice)));
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(volumeMenuItem);
-            menuItems.Add(new ToolStripMenuItem(Resources.Listening, null, OnListeningClick) { Checked = speaker.Listening });
-            menuItems.Add(new ToolStripMenuItem(Resources.StopTalking, null, OnStopTalkingClick));
+            menuItems.Add(new ToolStripMenuItem("Listening", null, OnListeningClick) { Checked = speaker.Listening });
+            menuItems.Add(new ToolStripMenuItem("Stop Talking", null, OnStopTalkingClick));
             menuItems.Add(new ToolStripSeparator());
-            menuItems.Add(new ToolStripMenuItem(Resources.Exit, null, OnExitClick));
+            menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
         }
 
         private void OnStopTalkingClick(object sender, EventArgs args)
         {
-            Trace.WriteLine(DateTime.Now + ": Talking stopped.");
             speaker.StopTalking();
         }
 
         private void OnExitClick(object sender, EventArgs args)
         {
-            Trace.WriteLine(DateTime.Now + ": Application exited.");
             ExitThread();
         }
 
@@ -141,6 +144,7 @@ namespace Voice
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
             speaker.CurrentVoice = toolStripMenuItem.Text;
+            speakerDictionary.ReloadDictionary(speaker.CurrentVoice);
 
             ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.CurrentVoice);
 
@@ -177,7 +181,7 @@ namespace Voice
                 return;
 
             lastSpeechTimeout.Restart();
-            speaker.Speak(text);
+            speaker.Speak(speakerDictionary.Transform(text));
         }
 
         protected override void Dispose(bool disposing)
