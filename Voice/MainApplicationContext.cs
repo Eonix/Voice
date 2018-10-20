@@ -14,12 +14,10 @@ namespace Voice
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
         private readonly Speaker speaker;
-        private readonly SpeakerDictionary speakerDictionary;
 
         public MainApplicationContext()
         {
             speaker = new Speaker((speaking) => notifyIcon.Icon = speaking ? Resources.icon_inverted : Resources.icon);
-            speakerDictionary = new SpeakerDictionary();
             components = new Container();
             notifyIcon = new NotifyIcon(components)
             {
@@ -41,8 +39,6 @@ namespace Voice
             restartTimer.Tick += RestartTimerOnTick;
             restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
             restartTimer.Start();
-
-            speakerDictionary.ReloadDictionary(speaker.CurrentVoice);
         }
 
         private Icon GetNotifyIconState()
@@ -74,8 +70,6 @@ namespace Voice
             var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
             volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
 
-            menuItems.Add(new ToolStripMenuItem("Open dictionary...", null, (_, __) => speakerDictionary.OpenDictionary(speaker.CurrentVoice)));
-            menuItems.Add(new ToolStripMenuItem("Reload dictionary", null, (_, __) => speakerDictionary.ReloadDictionary(speaker.CurrentVoice)));
             menuItems.Add(voicesMenuItem);
             menuItems.Add(rateMenuItem);
             menuItems.Add(volumeMenuItem);
@@ -144,7 +138,6 @@ namespace Voice
             var toolStripMenuItem = (ToolStripMenuItem)sender;
 
             speaker.CurrentVoice = toolStripMenuItem.Text;
-            speakerDictionary.ReloadDictionary(speaker.CurrentVoice);
 
             ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.CurrentVoice);
 
@@ -181,7 +174,6 @@ namespace Voice
                 return;
 
             lastSpeechTimeout.Restart();
-            speaker.Speak(speakerDictionary.Transform(text));
         }
 
         protected override void Dispose(bool disposing)

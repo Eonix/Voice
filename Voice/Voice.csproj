@@ -93,7 +93,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Speaker.cs" />
-    <Compile Include="SpeakerDictionary.cs" />
     <Compile Include="VoiceProfile.cs" />
     <Compile Include="VoiceProfileCollection.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

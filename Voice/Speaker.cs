@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Speech.Synthesis;
 using System.Text.RegularExpressions;
@@ -30,7 +29,7 @@ namespace Voice
             {
                 StopTalking();
                 ChangeVoiceProfile(value);
-                
+
                 Settings.Default.CurrentVoice = value;
                 Settings.Default.Save();
             }
@@ -81,7 +80,7 @@ namespace Voice
             if (!string.IsNullOrWhiteSpace(text))
                 speechSynthesizer.SpeakAsync(ShortenUrls(text));
         }
-        
+
         public void StopTalking()
         {
             speechSynthesizer.SpeakAsyncCancelAll();
@@ -100,7 +99,7 @@ namespace Voice
             action(GetOrCreateVoiceProfile(CurrentVoice));
             Settings.Default.Save();
         }
-        
+
         private static string ShortenUrls(string content)
         {
             return Regex.Replace(content,
@@ -125,7 +124,7 @@ namespace Voice
 
             return newProfile;
         }
-        
+
         public void Dispose()
         {
             speechSynthesizer.Dispose();
