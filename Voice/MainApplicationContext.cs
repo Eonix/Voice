@@ -174,6 +174,7 @@ namespace Voice
                 return;
 
             lastSpeechTimeout.Restart();
+            speaker.Speak(text);
         }
 
         protected override void Dispose(bool disposing)
