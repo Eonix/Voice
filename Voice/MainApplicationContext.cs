@@ -14,6 +14,8 @@ namespace Voice
         private readonly Container components;
         private readonly NotifyIcon notifyIcon;
         private readonly Speaker speaker;
+        private readonly Rectangle screenBounds;
+        private readonly SnippingForm snippingForm;
 
         public MainApplicationContext()
         {
@@ -29,15 +31,20 @@ namespace Voice
 
             PopulateMenu();
 
+            screenBounds = Screen.GetBounds(Point.Empty);
+            snippingForm = new SnippingForm(screenBounds);
+            components.Add(snippingForm);
+            snippingForm.SnippingFinished += OnSpeachTextReceived;
+
             var notificationForm = new NotificationForm();
             components.Add(notificationForm);
-            notificationForm.ClipboardUpdate += ClipboardNotificationOnClipboardUpdate;
+            notificationForm.ClipboardUpdate += OnSpeachTextReceived;
 
             // Timer for restarting the application if the speech engine was last used 5 mins. ago.
             // This is sadly a necessary fix to prevent the memory leak by the SAPI engine.
             var restartTimer = new Timer(components);
             restartTimer.Tick += RestartTimerOnTick;
-            restartTimer.Interval = (int) TimeSpan.FromSeconds(1).TotalMilliseconds;
+            restartTimer.Interval = (int)TimeSpan.FromSeconds(1).TotalMilliseconds;
             restartTimer.Start();
         }
 
@@ -53,7 +60,7 @@ namespace Voice
 
             if (lastSpeechTimeout.Elapsed < TimeSpan.FromMinutes(5))
                 return;
-            
+
             Application.Restart();
         }
 
@@ -61,13 +68,15 @@ namespace Voice
         {
             var menuItems = notifyIcon.ContextMenuStrip.Items;
 
-            var voicesMenuItem = new ToolStripMenuItem("Voices") {Name = "Voices"};
+            menuItems.Add(new ToolStripMenuItem("Capture Screen", null, OnCaptureClick));
+
+            var voicesMenuItem = new ToolStripMenuItem("Voices") { Name = "Voices" };
             voicesMenuItem.DropDownItems.AddRange(GetVoiceItems());
 
-            var rateMenuItem = new ToolStripMenuItem("Speech Rate") {Name = "Rate"};
+            var rateMenuItem = new ToolStripMenuItem("Speech Rate") { Name = "Rate" };
             rateMenuItem.DropDownItems.AddRange(GetRateItems());
 
-            var volumeMenuItem = new ToolStripMenuItem("Volume") {Name = "Volume"};
+            var volumeMenuItem = new ToolStripMenuItem("Volume") { Name = "Volume" };
             volumeMenuItem.DropDownItems.AddRange(GetVolumeItems());
 
             menuItems.Add(voicesMenuItem);
@@ -77,6 +86,18 @@ namespace Voice
             menuItems.Add(new ToolStripMenuItem("Stop Talking", null, OnStopTalkingClick));
             menuItems.Add(new ToolStripSeparator());
             menuItems.Add(new ToolStripMenuItem("Exit", null, OnExitClick));
+        }
+
+        private void OnCaptureClick(object sender, EventArgs args)
+        {
+            var bitmap = new Bitmap(screenBounds.Width, screenBounds.Height);
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                graphics.CopyFromScreen(Point.Empty, Point.Empty, screenBounds.Size);
+            }
+
+            snippingForm.BackgroundImage = bitmap;
+            snippingForm.Show();
         }
 
         private void OnStopTalkingClick(object sender, EventArgs args)
@@ -110,7 +131,7 @@ namespace Voice
 
         private ToolStripItem[] GetRateItems()
         {
-            var availableRates = new[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10};
+            var availableRates = new[] { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10 };
             return availableRates.Select(rate => new ToolStripMenuItem(Convert.ToString(rate), null, OnRateItemClick)
             {
                 Checked = speaker.Rate == rate
@@ -129,7 +150,7 @@ namespace Voice
         {
             var currentVoice = speaker.CurrentVoice;
             return speaker.Voices
-                .Select(voice => new ToolStripMenuItem(voice, null, OnVoiceItemClick) {Checked = currentVoice == voice})
+                .Select(voice => new ToolStripMenuItem(voice, null, OnVoiceItemClick) { Checked = currentVoice == voice })
                 .Cast<ToolStripItem>().ToArray();
         }
 
@@ -141,7 +162,7 @@ namespace Voice
 
             ClearAndSetSelectedItem(toolStripMenuItem.Owner, speaker.CurrentVoice);
 
-            var rateToolStripItem = (ToolStripMenuItem) notifyIcon.ContextMenuStrip.Items["Rate"];
+            var rateToolStripItem = (ToolStripMenuItem)notifyIcon.ContextMenuStrip.Items["Rate"];
             ClearAndSetSelectedItem(rateToolStripItem.DropDownItems[0].Owner, speaker.Rate);
 
             var volumeToolStripItem = (ToolStripMenuItem)notifyIcon.ContextMenuStrip.Items["Volume"];
@@ -168,7 +189,7 @@ namespace Voice
             notifyIcon.Icon = GetNotifyIconState();
         }
 
-        private void ClipboardNotificationOnClipboardUpdate(string text)
+        private void OnSpeachTextReceived(string text)
         {
             if (!speaker.Listening)
                 return;
